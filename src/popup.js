@@ -133,7 +133,7 @@
       return;
     }
 
-    ui.title.textContent = lastChat.title || '(no title on this page)';
+    ui.title.textContent = result.chat.title || '(no title on this page)';
     ui.count.textContent = String(result.turnCount);
     ui.preview.textContent = result.preview || '';
     ui.rangeFrom.value = '1';
