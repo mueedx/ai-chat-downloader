@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Factorial in Rust</title>
+  </head>
+  <body>
+    <main>
+      <div data-testid="chat-menu-trigger">Factorial in Rust</div>
+      <div data-testid="user-message" class="font-user-message">
+        <div>Write a factorial function in Rust.</div>
+      </div>
+      <div data-testid="assistant-message" class="font-claude-message">
+        <div>Here is an iterative version:</div>
+        <pre><code class="language-rust">fn factorial(n: u64) -> u64 {
+    (1..=n).product()
+}
+</code></pre>
+        <div class="thinking" aria-hidden="true" style="display: none">internal reasoning that must not be exported</div>
+      </div>
+      <div data-testid="user-message" class="font-user-message">
+        <div>Now show the recursive one.</div>
+      </div>
+    </main>
+  </body>
+</html>

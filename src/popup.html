@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>AI Chat Downloader</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <h1>AI Chat Downloader</h1>
+      <button id="refresh" class="ghost" type="button" title="Re-read the page">Refresh</button>
+    </header>
+
+    <section id="unsupported" class="panel hidden" role="alert">
+      <p id="unsupported-text"></p>
+    </section>
+
+    <section id="summary" class="panel">
+      <dl>
+        <div><dt>Site</dt><dd id="site">-</dd></div>
+        <div><dt>Title</dt><dd id="title">-</dd></div>
+        <div><dt>Messages</dt><dd id="count">-</dd></div>
+      </dl>
+      <p id="preview" class="preview"></p>
+    </section>
+
+    <section class="panel">
+      <fieldset id="formats" class="formats">
+        <legend>Format</legend>
+      </fieldset>
+      <p id="format-note" class="note"></p>
+    </section>
+
+    <section class="panel">
+      <label class="check">
+        <input id="selection-mode" type="checkbox" />
+        <span>Export only some messages</span>
+      </label>
+      <div id="selection-fields" class="range hidden">
+        <label>from <input id="range-from" type="number" min="1" value="1" /></label>
+        <label>to <input id="range-to" type="number" min="1" value="1" /></label>
+      </div>
+    </section>
+
+    <section id="warnings" class="panel hidden">
+      <ul id="warning-list"></ul>
+    </section>
+
+    <footer class="bar">
+      <button id="export" class="primary" type="button">Export</button>
+    </footer>
+
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+
+    <script src="core/namespace.js"></script>
+    <script src="core/chat.js"></script>
+    <script src="core/filename.js"></script>
+    <script src="exporters/sections.js"></script>
+    <script src="exporters/markdown.js"></script>
+    <script src="exporters/text.js"></script>
+    <script src="exporters/zip.js"></script>
+    <script src="exporters/docx.js"></script>
+    <script src="exporters/pdf.js"></script>
+    <script src="exporters/index.js"></script>
+    <script src="storage.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

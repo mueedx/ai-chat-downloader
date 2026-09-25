@@ -1,0 +1,19 @@
+{
+  "name": "ai-chat-downloader",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Chrome extension that exports the AI chat you are reading to Markdown, text, DOCX, or PDF. No build step, no runtime dependencies.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test \"test/**/*.test.js\"",
+    "check:manifest": "node tools/check-manifest.cjs",
+    "icons": "node tools/make-icons.cjs",
+    "package": "node tools/package.cjs"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

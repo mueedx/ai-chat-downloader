@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Reverse a string</title>
+    <meta property="og:title" content="Reverse a string" />
+  </head>
+  <body>
+    <main>
+      <h1 data-testid="conversation-title">Reverse a string</h1>
+      <article data-testid="conversation-turn-1">
+        <div data-message-author-role="user" class="whitespace-pre-wrap">
+          How do I reverse a string in Python?
+        </div>
+      </article>
+      <article data-testid="conversation-turn-2">
+        <div data-message-author-role="assistant" class="markdown">
+          <p>Use slicing:</p>
+          <pre><code class="language-python">s = "abc"
+print(s[::-1])
+</code></pre>
+          <p>That prints <code>cba</code>.</p>
+          <button aria-label="Copy">Copy</button>
+        </div>
+      </article>
+      <article data-testid="conversation-turn-3">
+        <div data-message-author-role="user" class="whitespace-pre-wrap">
+          <img src="blob:diagram" alt="a diagram" />
+          Can you explain this diagram?
+        </div>
+      </article>
+    </main>
+  </body>
+</html>

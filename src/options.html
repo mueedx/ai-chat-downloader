@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>AI Chat Downloader - Options</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main>
+      <h1>AI Chat Downloader</h1>
+      <p class="lede">
+        Everything runs in your browser. No account, no server, no analytics. Conversations are
+        read from the page you are already looking at and written straight to your downloads
+        folder.
+      </p>
+
+      <section>
+        <h2>Default format</h2>
+        <p class="hint">The format the popup starts on. Every export still lets you switch.</p>
+        <div id="formats" class="formats"></div>
+      </section>
+
+      <section>
+        <h2>Sites</h2>
+        <p class="hint">
+          Turn a site off if you never export from it. Turning a site off does not reduce the
+          permissions the extension holds; the browser grants those at install time.
+        </p>
+        <div id="sites" class="sites"></div>
+      </section>
+
+      <section>
+        <h2>Site status</h2>
+        <p class="hint">
+          A site shows as unverified until someone has run an export against a live signed-in
+          conversation and recorded the date. An unverified site can still be wrong, because
+          chat sites change their markup without notice.
+        </p>
+        <div id="status" class="status-list"></div>
+      </section>
+
+      <section>
+        <h2>Limits worth knowing</h2>
+        <ul>
+          <li>PDF uses the built-in PDF fonts, which cannot draw characters outside Latin-1. CJK text becomes question marks in PDF only; Markdown, text, and Word keep it.</li>
+          <li>Only messages the page has rendered can be read. A very long conversation may be partial until you scroll through it.</li>
+          <li>One conversation per export. There is no bulk or whole-history export.</li>
+        </ul>
+      </section>
+    </main>
+
+    <script src="core/namespace.js"></script>
+    <script src="core/chat.js"></script>
+    <script src="core/sites.js"></script>
+    <script src="adapters/chatgpt.js"></script>
+    <script src="adapters/claude.js"></script>
+    <script src="adapters/gemini.js"></script>
+    <script src="adapters/deepseek.js"></script>
+    <script src="adapters/qwen.js"></script>
+    <script src="adapters/kimi.js"></script>
+    <script src="adapters/index.js"></script>
+    <script src="storage.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>
