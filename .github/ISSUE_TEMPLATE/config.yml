@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Privacy question
+    url: https://github.com/mueedx/ai-chat-downloader/blob/main/PRIVACY.md
+    about: Read the privacy policy first; it covers storage, network, and permissions.
+  - name: Report a vulnerability
+    url: https://github.com/mueedx/ai-chat-downloader/blob/main/SECURITY.md
+    about: Report privately. Do not open a public issue for a vulnerability.

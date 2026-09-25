@@ -1,0 +1,70 @@
+name: Bug report
+description: Something in the export is wrong, or a site stopped working
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please do not paste a real conversation. Use text you wrote yourself, or a
+        sanitised snippet with your content removed.
+  - type: dropdown
+    id: site
+    attributes:
+      label: Site
+      options:
+        - ChatGPT
+        - Claude
+        - Gemini
+        - DeepSeek
+        - Qwen
+        - Kimi
+        - Not a supported site
+    validations:
+      required: true
+  - type: dropdown
+    id: symptom
+    attributes:
+      label: What happened
+      options:
+        - No file was written and the popup said nothing could be read
+        - The file is missing some messages
+        - The file has the wrong speaker on a message
+        - Code blocks lost their formatting
+        - The file will not open
+        - The download was interrupted
+        - The extension did nothing when I clicked Export
+    validations:
+      required: true
+  - type: input
+    id: popup-message
+    attributes:
+      label: Popup message
+      description: The text the popup showed, including the list of selectors if it appears.
+    validations:
+      required: true
+  - type: textarea
+    id: markup
+    attributes:
+      label: Sanitised markup
+      description: The outer HTML of one message container, with your own text removed.
+      render: html
+  - type: input
+    id: version
+    attributes:
+      label: Extension version
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: chrome
+    attributes:
+      label: Chrome version
+      placeholder: 141.0.7390.54
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+    validations:
+      required: true
