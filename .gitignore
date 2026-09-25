@@ -1,0 +1,29 @@
+# Dependencies: the extension has none. node_modules appears only if tooling is added.
+node_modules/
+
+# Packaged extension archives and signing material
+dist/
+build/
+*.zip
+*.crx
+*.pem
+
+# Logs and scratch files
+*.log
+tmp/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors and IDEs
+.idea/
+*.swp
+*.swo
+.vscode/*
+!.vscode/extensions.json
+
+# Local agent and tooling state
+.kilo/
+.cline/
+.cursor/
+node_modules/.cache/
