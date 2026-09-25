@@ -29,7 +29,6 @@
   };
 
   let chosenFormat = 'md';
-  let lastChat = null;
 
   function setStatus(text, kind) {
     ui.status.textContent = text || '';
@@ -102,7 +101,6 @@
   async function refresh() {
     setStatus('Reading the page…');
     showWarnings([]);
-    lastChat = null;
 
     const tab = await activeTab();
     if (!tab || typeof tab.id !== 'number') {
@@ -135,7 +133,6 @@
       return;
     }
 
-    lastChat = result.chat;
     ui.title.textContent = lastChat.title || '(no title on this page)';
     ui.count.textContent = String(result.turnCount);
     ui.preview.textContent = result.preview || '';
