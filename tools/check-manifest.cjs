@@ -83,6 +83,43 @@ for (const file of source) {
   }
 }
 
+// A service worker global scope has no window, no document, and no location. A reference to any
+// of them throws during evaluation, the worker never registers its listener, and every export
+// silently fails to write a file. This shipped once; the check is here so it cannot again.
+const workerFile = manifest.background && manifest.background.service_worker;
+if (workerFile) {
+  const workerPath = path.join(root, workerFile);
+  if (!fs.existsSync(workerPath)) {
+    fail('service worker missing: ' + workerFile);
+  } else {
+    const workerCode = fs
+      .readFileSync(workerPath, 'utf8')
+      .replace(/\/\/.*$/gm, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '');
+
+    for (const forbidden of ['window', 'document', 'location', 'navigator']) {
+      const pattern = new RegExp('(^|[^.' + forbidden[0] + '\\w])' + forbidden + '\\b');
+      if (pattern.test(workerCode)) {
+        fail(workerFile + ' references ' + forbidden + ', which a service worker does not have');
+      }
+    }
+
+    // The worker is loaded on its own, so it must not need the namespace bootstrap.
+    if (/AIChatDownloader;|AIChatDownloader\)/.test(workerCode)) {
+      fail(workerFile + ' must create its own namespace: the manifest does not load the bootstrap there');
+    }
+  }
+}
+
+// Every other entry point really is a page or a content script, so a window reference is fine
+// there. This is a note, not a check, and it exists because the difference caused a real bug.
+for (const script of manifest.content_scripts || []) {
+  const first = (script.js || [])[0];
+  if (first && !/namespace\.js$/.test(first)) {
+    fail('content scripts must load src/core/namespace.js first, found ' + first);
+  }
+}
+
 if (problems.length) {
   console.error('manifest check failed:');
   for (const problem of problems) console.error('  - ' + problem);

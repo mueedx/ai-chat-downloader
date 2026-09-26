@@ -21,12 +21,17 @@ on engineering questions and `RULES.md` wins on writing questions.
 
 - No runtime dependency, no bundler, no build step. `src/` is loaded by Chrome as written.
 - No `eval`, no `new Function`, no remote code, no Node globals in `src/`.
+- The service worker is not a page. `src/background.js` must never mention `window`, `document`,
+  `location`, or `navigator`, and must not depend on the namespace bootstrap, because the manifest
+  loads it alone in a scope that has none of those. `npm run check:manifest` enforces this.
 - No network request from extension code. This is not negotiable and covers analytics, logging,
   error reporting, and beacons.
 - Permissions stay `storage` and `downloads`. Host access stays the explicit origin list in
   `manifest.json`.
 - Never widen host access with `<all_urls>` or `*://*/*`.
 - Never write a file and report success unless the file was actually written.
+- A test that passes because the harness supplied a global the real scope does not have is worse
+  than no test. When code runs somewhere other than a page, simulate that scope in the test.
 
 ## Honesty requirements
 

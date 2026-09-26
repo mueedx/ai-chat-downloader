@@ -37,3 +37,9 @@
   the final read could win over an earlier longer read.
 - Every exported file now states whether it is the whole conversation, with a reason when not.
 - Added the popup disclosure and the global and per-site capture switches.
+- Fixed the service worker, which threw on load because it referenced a `window` a service worker
+  does not have. Every export failed silently as a result.
+- Added a worker suite that evaluates the file in a vm context with no `window`, because the shared
+  harness supplied one and hid the bug.
+- Extended the manifest check to fail on page-only globals in the service worker and on a content
+  script list that does not load the namespace first.

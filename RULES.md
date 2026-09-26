@@ -61,6 +61,9 @@ These come from `.specify/memory/constitution.md` and are not optional either.
    `tasks.md`.
 3. No runtime dependency. `src/` is exactly what Chrome loads. No bundler, no transpiler, no
    `eval`, no `new Function`, no remote code, and no Node globals such as `Buffer`.
+3a. Three scopes, three rules. Content scripts and extension pages have a `window`; the service
+   worker does not, and it is loaded on its own. Never write a test that supplies a global the real
+   scope lacks, because that hides the bug instead of finding it.
 4. Permissions are `storage` and `downloads` only. Host access is the explicit origin list, never
    a wildcard. Changing either requires a constitution amendment.
 5. No network request leaves the extension. Conversation content, titles, counts, filenames, and

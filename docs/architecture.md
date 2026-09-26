@@ -59,13 +59,34 @@ warning in the popup that appears before the export when characters would be los
 properly means embedding a font subset, which is a real project and is scoped separately rather
 than bolted on here.
 
-## Scripts, not modules
+## Scripts, not modules, and three different global scopes
 
 A Manifest V3 content script cannot use `ES module` imports, so every file in `src/` attaches to
-one global, `window.AIChatDownloader`, in load order defined by `manifest.json`. `npm test` loads
-the same files into a Node context through `new Function('window', code)`, so the tests exercise
-the files the browser runs rather than a parallel build. `test/minidom.js` provides just enough
-DOM for that.
+one global, `AIChatDownloader`, in load order defined by `manifest.json`.
+
+The important part is that this project runs in three scopes, and they are not the same:
+
+| Scope | Files | Has `window` | Has `document` | How it is loaded |
+| --- | --- | --- | --- | --- |
+| Content script | `core/`, `adapters/`, `content.js` | yes | yes | `content_scripts` in order |
+| Extension page | `popup.*`, `options.*` | yes | yes | `script` tags in order |
+| Service worker | `background.js` | **no** | **no** | `background.service_worker`, alone |
+
+The service worker is the exception, and it has to be treated as one. It is loaded on its own,
+without the namespace bootstrap, in a scope with no `window`, no `document`, and no `location`.
+`background.js` therefore resolves the global scope itself and creates the namespace, and it never
+mentions a page-only global.
+
+This is not hypothetical: the first version referenced `window` on its last line and threw during
+evaluation, so the worker never registered its listener and every export silently failed to write
+a file. The file passed every test, because the shared test harness sets `globalThis.window`, which
+made a worker-only bug invisible. Two things guard it now: `test/worker.test.js` evaluates the file
+in a real `vm` context that has no `window` at all, and `npm run check:manifest` fails the build if
+the service worker mentions `window`, `document`, `location`, or `navigator`, or if it depends on the
+namespace bootstrap the manifest does not load there.
+
+The general rule this repo now follows: when a test needs a global the target scope does not have,
+simulate the target scope, do not paper over it.
 
 ## The walk, and why a capture has to be merged
 

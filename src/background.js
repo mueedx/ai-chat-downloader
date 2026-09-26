@@ -1,6 +1,12 @@
 // src/background.js
 // Service worker. Owns the download call so the popup never needs the downloads API
 // itself, and holds no state. It makes no network requests (Constitution Principle I).
+//
+// This is the one file that does not run in a page. A service worker has no `window` and no
+// `document`, and the manifest loads it on its own, without the namespace bootstrap, so it
+// resolves the global scope itself and creates the namespace if it is not there. Referencing
+// `window` here throws during evaluation, which stops the worker registering its listener and
+// silently disables every export. See test/worker.test.js.
 
 (function (NS) {
   'use strict';
@@ -46,4 +52,5 @@
   });
 
   NS.background = { startDownload: startDownload, flash: flash };
-})(window.AIChatDownloader);
+})((typeof globalThis !== 'undefined' ? globalThis : self).AIChatDownloader ||
+  ((typeof globalThis !== 'undefined' ? globalThis : self).AIChatDownloader = {}));
