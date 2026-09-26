@@ -24,3 +24,5 @@
 - Fixed the DOM engine leaking interface chrome into exports and missing image notes, both caused
   by a case mismatch in the tag ignore list.
 - Kept list markers when a message is rendered as plain text.
+- Added a popup suite driving the export path, the format switch, the turn range, and the failure
+  paths that must not reach the download call.
