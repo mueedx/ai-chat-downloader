@@ -119,7 +119,9 @@ logic path, and because the format writers are the risk in this feature.
 
 ## Status
 
-All tasks above are implemented and `npm test` passes 69 cases. One thing is not covered by a
+All tasks above are implemented and `npm test` passes 81 cases: 18 core, 9 filename, 18
+exporter, 24 adapter, and 12 runtime cases covering the content script, the preference store, and
+the service worker through their real message and storage APIs. One thing is not covered by a
 task and is not done: no adapter has been run against a live signed-in conversation, because that
 needs accounts and a browser session. Every site therefore stays `verified: false` with no date,
 `docs/supported-sites.md` says so, and the options page shows it. Live verification is the next

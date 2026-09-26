@@ -19,3 +19,8 @@
 - Added `RULES.md`, `AGENTS.md`, and `CLAUDE.md` binding the writing checklist, the constitution,
   and the spec-kit order.
 - Left every adapter marked unverified, with the reason recorded in `docs/supported-sites.md`.
+- Added a runtime suite covering the content script, preference store, and service worker.
+- Fixed the popup throwing on a supported site when it read a removed cache variable.
+- Fixed the DOM engine leaking interface chrome into exports and missing image notes, both caused
+  by a case mismatch in the tag ignore list.
+- Kept list markers when a message is rendered as plain text.
