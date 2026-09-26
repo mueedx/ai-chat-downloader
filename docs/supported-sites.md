@@ -44,12 +44,37 @@ those sites breaks.
 - **Every site** virtualises very long transcripts, so only the rendered part can be captured.
   The popup says so when it detects a scrolled transcript.
 
-## Partial capture heuristic
+## How complete a capture is
 
-`partial` is set when the transcript container is scrollable by more than 200 pixels and the page
-is scrolled more than 200 pixels from the top. That is a heuristic, not proof: a site may keep
-older turns rendered, or may drop them without any scroll signal. The heuristic exists so the
-common case is disclosed rather than assumed, not to make a guarantee.
+Every exported file states whether it is the whole conversation. The claim comes from one place, the
+walk in `src/core/walker.js`, and it has two outcomes rather than three: either the walk reached the
+bottom of the transcript container, or the file says what part of it holds and why.
+
+What each site needs for that to work is a scroll container its adapter declares, and how that
+container behaves:
+
+| Site | Scroll container | Virtualises older turns | Notes |
+| --- | --- | --- | --- |
+| ChatGPT | `main` | expected on long chats | unverified |
+| Claude | `main` | expected on long chats | unverified |
+| Gemini | `main` | unknown | no streaming selector either, see above |
+| DeepSeek | `main` | unknown | unverified |
+| Qwen | `main` | unknown | unverified |
+| Kimi | `main` | unknown | unverified |
+
+Everything in that table is unverified, like the selectors above it. The walk is written to work
+through the container every adapter already declares, so it is site-agnostic, but that has not been
+confirmed against a real long conversation on any of them. Until it is, a site marked unverified
+should be assumed to produce an incomplete capture on a long conversation, and the file will say so.
+
+Two limits are structural rather than per-site. A site that needs a "load more" control is not
+walked at all, because the extension does not click page controls. And a site that recycles its
+message elements needs the successive reads merged, which the walk does, but the merge is a
+heuristic on overlap and has only been tested against the shapes a recycling list produces.
+
+When the walk is switched off, or cannot run, the file says the capture covers only what the page
+had rendered. The previous behaviour, a shared partial note based on scroll position, is gone: a
+capture is complete when the walk says so, and incomplete otherwise, and the reason is specific.
 
 ## Recording a verification
 
