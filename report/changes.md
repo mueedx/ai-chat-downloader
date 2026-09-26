@@ -43,3 +43,6 @@
   harness supplied one and hid the bug.
 - Extended the manifest check to fail on page-only globals in the service worker and on a content
   script list that does not load the namespace first.
+- Fixed window scroll restoration in the walk, which read a property the document does not have
+  and would have thrown if it had used the window instead. The walk now calls scrollTo.
+- Deleted the stale 0.1.0 build artifact, which still contained the broken service worker.

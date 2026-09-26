@@ -111,6 +111,13 @@ duplicate or drop turns. When the final read is longer than every earlier read, 
 and contains them, the final read is used directly, because a page that renders everything has
 nothing to merge.
 
+Restoration has two parts, because there are two things that move. The transcript's own scroll
+container is put back to its old offset, or to the proportion of the new scroll height when the
+site replaced the container mid-walk. The window is separate: `scrollY` lives on `window`, not on
+`document`, and on a real window it is a getter-only property, so the walk calls `scrollTo` rather
+than assigning to it. Assigning would throw in strict mode, which is exactly what the first version
+did. `src/content.js` passes `window` as the viewport for that reason.
+
 Two bounds keep this from becoming a hang: a time limit and a step limit. Exhausting either stops
 the walk, restores the position, and still produces an export. Running out of steps is deliberately
 not reported as reaching the bottom, because that would put a "complete" claim in the file for a

@@ -131,6 +131,49 @@ test('a position at the very bottom is left at the bottom', async () => {
   assert.equal(page.container.scrollTop, NS.walker.maxScroll(page.container));
 });
 
+test('the window scroll is restored through scrollTo, not by assigning scrollY', async () => {
+  const page = fakeDoc({ pages: [[turn('user', 'a')], [turn('user', 'b')]] });
+  const calls = [];
+  const viewport = {
+    scrollY: 900,
+    scrollTo: (x, y) => calls.push([x, y])
+  };
+  // A real window exposes scrollY as a getter-only property. Assigning to it in strict mode
+  // throws, which is why the walk has to call scrollTo.
+  Object.defineProperty(viewport, 'scrollY', {
+    get: () => 900,
+    set: () => { throw new TypeError('scrollY of #<Window> has only a getter'); }
+  });
+
+  const result = await NS.walker.walkTranscript({
+    adapter: ADAPTER,
+    doc: page.doc,
+    viewport: viewport,
+    collect: page.collect,
+    now: clock().now,
+    sleep: clock().sleep
+  });
+
+  assert.equal(result.restored, true);
+  assert.deepEqual(calls, [[0, 900]], 'the window is put back exactly where the user was');
+});
+
+test('a walk without a viewport still restores the container', async () => {
+  const page = fakeDoc({ pages: [[turn('user', 'a')]] });
+  page.container.scrollTop = 400;
+
+  const result = await NS.walker.walkTranscript({
+    adapter: ADAPTER,
+    doc: page.doc,
+    collect: page.collect,
+    now: clock().now,
+    sleep: clock().sleep
+  });
+
+  assert.equal(result.restored, true);
+  assert.equal(page.container.scrollTop, 400);
+});
+
 test('a page with no scroll container is skipped, and says why', async () => {
   const page = fakeDoc({ pages: [[turn('user', 'a')]] });
   const result = await NS.walker.walkTranscript({

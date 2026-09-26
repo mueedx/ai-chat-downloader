@@ -49,27 +49,52 @@
     return maxScroll(element) > DEFAULTS.growTolerancePx;
   }
 
-  function snapshot(doc, container) {
+  function resolveViewport(opts, doc) {
+    // `scrollY` lives on the window, not on the document, and on a real window it is a
+    // getter-only property, so restoring it has to call scrollTo rather than assign to it.
+    if (opts.viewport) return opts.viewport;
+    if (doc && typeof doc.scrollY === 'number') return doc;
+    return null;
+  }
+
+  function snapshot(opts, container) {
+    const viewport = resolveViewport(opts, opts.doc);
     return {
       container: container,
       scrollTop: container ? Number(container.scrollTop) || 0 : 0,
       ratio: container && container.scrollHeight
         ? (Number(container.scrollTop) || 0) / container.scrollHeight
         : 0,
-      windowY: doc && 'scrollY' in doc ? Number(doc.scrollY) || 0 : 0
+      viewport: viewport,
+      viewportY: viewport ? Number(viewport.scrollY) || 0 : 0
     };
+  }
+
+  function scrollViewport(viewport, y) {
+    if (!viewport) return;
+    if (typeof viewport.scrollTo === 'function') {
+      viewport.scrollTo(0, y);
+      return;
+    }
+    try {
+      viewport.scrollY = y;
+    } catch (error) {
+      // A viewport that refuses the assignment has left the user where they were; not worth
+      // failing an export over, because the transcript is already captured.
+    }
   }
 
   /**
    * Puts the reading position back. If the container element was replaced while we walked, the
-   * old offset no longer means anything, so the proportion is used instead.
+   * old offset no longer means anything, so the proportion is used instead. The window scroll is
+   * restored alongside it, because some sites scroll the window rather than an inner element.
    */
-  function restore(doc, adapter, before) {
+  function restore(opts, before) {
     if (!before) return false;
 
     const container = before.container && before.container.isConnected !== false
       ? before.container
-      : resolveContainer(adapter, doc);
+      : resolveContainer(opts.adapter, opts.doc);
 
     if (container) {
       const previousHeight = before.container ? before.container.scrollHeight : container.scrollHeight;
@@ -80,9 +105,7 @@
       container.scrollTop = clamp(target, 0, maxScroll(container));
     }
 
-    if (doc && 'scrollY' in doc) {
-      doc.scrollY = before.windowY;
-    }
+    scrollViewport(before.viewport, before.viewportY);
 
     return true;
   }
@@ -120,7 +143,7 @@
       result.stopReason = stopReason;
       result.completed = stopReason === 'bottom';
       result.durationMs = now() - started;
-      result.restored = restore(opts.doc, opts.adapter, before);
+      result.restored = restore(opts, before);
       return result;
     };
 
@@ -141,7 +164,7 @@
     }
 
     result.ran = true;
-    before = snapshot(doc, container);
+    before = snapshot(opts, container);
 
     const deadline = () => now() - started >= (opts.maxDurationMs || DEFAULTS.maxDurationMs);
     const stepLimit = opts.maxSteps || DEFAULTS.maxSteps;

@@ -96,6 +96,9 @@
       const capture = await NS.walker.captureTranscript({
         adapter: adapter,
         doc: document,
+        // The window scroll is a separate restoration from the transcript's own container, and
+        // it lives on window, not on document.
+        viewport: typeof window !== 'undefined' ? window : null,
         collect: () => {
           last = readPage(adapter);
           return last.ok ? last.chat.turns : [];
