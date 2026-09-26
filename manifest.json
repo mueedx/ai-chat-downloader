@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AI Chat Downloader - Export ChatGPT, Claude, Gemini Chats",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Save the AI chat on screen as Markdown, text, Word, or PDF. Works on ChatGPT, Claude, Gemini, DeepSeek, Qwen, Kimi. No tracking.",
   "minimum_chrome_version": "116",
   "permissions": [
@@ -60,6 +60,8 @@
         "src/core/chat.js",
         "src/core/filename.js",
         "src/core/dom.js",
+        "src/core/merge.js",
+        "src/core/walker.js",
         "src/core/sites.js",
         "src/adapters/chatgpt.js",
         "src/adapters/claude.js",

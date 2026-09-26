@@ -12,8 +12,8 @@ import { loadFixture } from './minidom.js';
 
 const IDS = [
   'unsupported', 'unsupported-text', 'site', 'title', 'count', 'preview', 'formats',
-  'format-note', 'selection-mode', 'selection-fields', 'range-from', 'range-to',
-  'warnings', 'warning-list', 'export', 'status', 'refresh'
+  'format-note', 'walk', 'walk-note', 'selection-mode', 'selection-fields', 'range-from',
+  'range-to', 'warnings', 'warning-list', 'export', 'status', 'refresh'
 ];
 
 function makeElement(id) {
@@ -75,10 +75,11 @@ function makeElement(id) {
   return element;
 }
 
-function harness({ site, extract }) {
+function harness(initial, site = SUPPORTED, extract = goodExtract) {
   const elements = new Map(IDS.map((id) => [id, makeElement(id)]));
   const downloads = [];
-  const stored = {};
+  const extracts = [];
+  const stored = Object.assign({}, initial);
 
   globalThis.chrome = {
     runtime: {
@@ -98,8 +99,12 @@ function harness({ site, extract }) {
     tabs: {
       query: (_query, callback) => callback([{ id: 7, url: 'https://example.test/c/1' }]),
       sendMessage: (_id, message, callback) => {
-        if (message.type === 'site-info') callback(site);
-        else callback(extract());
+        if (message.type === 'site-info') {
+          callback(site);
+          return;
+        }
+        extracts.push(message.payload);
+        callback(extract());
       }
     }
   };
@@ -122,7 +127,7 @@ function harness({ site, extract }) {
   loadSource('storage.js', { force: true });
   loadSource('popup.js', { force: true });
 
-  return { elements: elements, downloads: downloads, stored: stored };
+  return { elements: elements, downloads: downloads, stored: stored, extracts: extracts };
 }
 
 const SUPPORTED = {
@@ -152,8 +157,51 @@ function goodExtract() {
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
+test('the walk is disclosed before the export, and the page is told it will move', async () => {
+  const ui = harness({}, SUPPORTED, goodExtract);
+  await flush();
+
+  const note = ui.elements.get('walk-note');
+  assert.equal(ui.elements.get('walk').checked, true, 'the walk is on by default');
+  assert.match(note.textContent, /will scroll to load the rest/);
+  assert.match(note.textContent, /return to where you are/);
+
+  // The preview read must not walk the page: that would move the page before the user asked.
+  assert.deepEqual(ui.extracts[0], {});
+
+  await ui.elements.get('export').dispatch('click');
+  await flush();
+  assert.deepEqual(ui.extracts[ui.extracts.length - 1], { walk: true });
+});
+
+test('turning the walk off says the page will not move, and the export respects it', async () => {
+  const ui = harness({}, SUPPORTED, goodExtract);
+  await flush();
+
+  const toggle = ui.elements.get('walk');
+  toggle.checked = false;
+  await toggle.dispatch('change');
+  assert.match(ui.elements.get('walk-note').textContent, /page has already rendered/);
+
+  await ui.elements.get('export').dispatch('click');
+  await flush();
+  assert.deepEqual(ui.extracts[ui.extracts.length - 1], { walk: false });
+});
+
+test('a site switched off in the options page is not walked, and the popup says why', async () => {
+  const ui = harness({ walkEnabled: true, walkDisabledSites: ['chatgpt'] }, SUPPORTED, goodExtract);
+  await flush();
+
+  assert.equal(ui.elements.get('walk').checked, true, 'the global switch is still on');
+  assert.match(ui.elements.get('walk-note').textContent, /Off for this site in the options page/);
+
+  await ui.elements.get('export').dispatch('click');
+  await flush();
+  assert.deepEqual(ui.extracts[ui.extracts.length - 1], { walk: false });
+});
+
 test('the popup offers four formats and marks the site as unverified', async () => {
-  const ui = harness({ site: SUPPORTED, extract: goodExtract });
+  const ui = harness({}, SUPPORTED, goodExtract);
   await flush();
 
   assert.equal(ui.elements.get('formats').children.length, 4);
@@ -168,10 +216,8 @@ test('the popup offers four formats and marks the site as unverified', async () 
 });
 
 test('an unsupported site disables the export and lists the sites that work', async () => {
-  const ui = harness({
-    site: { supported: false, message: 'This site is not supported. AI Chat Downloader works on: ChatGPT, Claude, Gemini, DeepSeek, Qwen, Kimi.', sites: [] },
-    extract: () => ({ ok: false, reason: 'not supported', tried: [] })
-  });
+  const ui = harness({}, { supported: false, message: 'This site is not supported. AI Chat Downloader works on: ChatGPT, Claude, Gemini, DeepSeek, Qwen, Kimi.', sites: [] },
+    () => ({ ok: false, reason: 'not supported', tried: [] }));
   await flush();
 
   assert.equal(ui.elements.get('unsupported').classList.contains('hidden'), false);
@@ -181,7 +227,7 @@ test('an unsupported site disables the export and lists the sites that work', as
 });
 
 test('exporting hands the file to the download path with a real filename', async () => {
-  const ui = harness({ site: SUPPORTED, extract: goodExtract });
+  const ui = harness({}, SUPPORTED, goodExtract);
   await flush();
 
   await ui.elements.get('export').dispatch('click');
@@ -195,7 +241,7 @@ test('exporting hands the file to the download path with a real filename', async
 });
 
 test('choosing a format changes the file that is written and is remembered', async () => {
-  const ui = harness({ site: SUPPORTED, extract: goodExtract });
+  const ui = harness({}, SUPPORTED, goodExtract);
   await flush();
 
   const pdfButton = ui.elements.get('formats').children[3];
@@ -210,14 +256,11 @@ test('choosing a format changes the file that is written and is remembered', asy
 });
 
 test('a failed extraction never reaches the download call and names the selectors', async () => {
-  const ui = harness({
-    site: SUPPORTED,
-    extract: () => ({
-      ok: false,
-      reason: 'No conversation messages were found on this page.',
-      tried: ['[data-message-author-role]', 'article[data-testid^="conversation-turn"]']
-    })
-  });
+  const ui = harness({}, SUPPORTED, () => ({
+    ok: false,
+    reason: 'No conversation messages were found on this page.',
+    tried: ['[data-message-author-role]', 'article[data-testid^="conversation-turn"]']
+  }));
   await flush();
 
   assert.equal(ui.elements.get('export').disabled, true);
@@ -228,15 +271,12 @@ test('a failed extraction never reaches the download call and names the selector
 });
 
 test('warnings for unreadable, incomplete, and partial captures reach the panel', async () => {
-  const ui = harness({
-    site: SUPPORTED,
-    extract: () => {
-      const result = goodExtract();
-      result.unreadableTurns = 2;
-      result.incompleteTurns = 1;
-      result.partial = true;
-      return result;
-    }
+  const ui = harness({}, SUPPORTED, () => {
+    const result = goodExtract();
+    result.unreadableTurns = 2;
+    result.incompleteTurns = 1;
+    result.partial = true;
+    return result;
   });
   await flush();
 
@@ -248,7 +288,7 @@ test('warnings for unreadable, incomplete, and partial captures reach the panel'
 });
 
 test('a selection exports only the chosen turns and says so in the status line', async () => {
-  const ui = harness({ site: SUPPORTED, extract: goodExtract });
+  const ui = harness({}, SUPPORTED, goodExtract);
   await flush();
 
   const toggle = ui.elements.get('selection-mode');
@@ -267,7 +307,7 @@ test('a selection exports only the chosen turns and says so in the status line',
 });
 
 test('a download the browser refuses is reported as a failure, not a success', async () => {
-  const ui = harness({ site: SUPPORTED, extract: goodExtract });
+  const ui = harness({}, SUPPORTED, goodExtract);
   globalThis.chrome.runtime.sendMessage = (_message, callback) =>
     callback({ ok: false, error: 'The download could not be started.' });
   await flush();

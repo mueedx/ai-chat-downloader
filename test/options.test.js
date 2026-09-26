@@ -59,7 +59,9 @@ function textOf(node) {
 }
 
 function harness(initial, beforeLoad) {
-  const elements = new Map(['formats', 'sites', 'status'].map((id) => [id, makeElement(id)]));
+  const elements = new Map(
+    ['formats', 'sites', 'status', 'walk-global', 'walk-sites'].map((id) => [id, makeElement(id)])
+  );
   const stored = Object.assign({}, initial);
 
   globalThis.chrome = {
@@ -109,6 +111,43 @@ test('choosing a format stores it and moves the pressed state', async () => {
   const buttons = ui.elements.get('formats').children;
   assert.equal(buttons[2].attributes['aria-pressed'], 'true');
   assert.equal(buttons[0].attributes['aria-pressed'], 'false');
+});
+
+test('the full capture switch is on by default and can be turned off', async () => {
+  const ui = harness({ format: 'md', disabledSites: [] });
+  await flush();
+
+  const button = ui.elements.get('walk-global');
+  assert.equal(button.attributes['aria-pressed'], 'true');
+  assert.match(button.textContent, /: on$/);
+
+  await button.onclick();
+  assert.equal(ui.stored.walkEnabled, false);
+  assert.equal(ui.elements.get('walk-global').attributes['aria-pressed'], 'false');
+  assert.match(ui.elements.get('walk-global').textContent, /: off$/);
+});
+
+test('per-site capture opt-outs persist and follow the global switch', async () => {
+  const ui = harness({ format: 'md', disabledSites: [] });
+  await flush();
+
+  const rows = ui.elements.get('walk-sites').children;
+  assert.equal(rows.length, 6, 'every site has its own capture switch');
+
+  const claude = rows[1].children[0];
+  assert.equal(claude.checked, true);
+  claude.checked = false;
+  await claude.dispatch('change');
+  assert.deepEqual(ui.stored.walkDisabledSites, ['claude']);
+
+  const off = ui.elements.get('walk-global');
+  await off.onclick();
+
+  const afterGlobalOff = ui.elements.get('walk-sites').children;
+  for (const row of afterGlobalOff) {
+    assert.equal(row.children[0].checked, false, 'the global switch overrides the per-site one');
+    assert.equal(row.children[0].disabled, true);
+  }
 });
 
 test('every supported site is listed with its origins', async () => {

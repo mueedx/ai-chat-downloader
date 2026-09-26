@@ -24,6 +24,19 @@ If nothing can be read, no file is written and the panel says so, with the selec
 tried. A blank document that looks like data loss is the one outcome this project is built to
 avoid.
 
+## Long conversations
+
+A long conversation is not all in the page: the site discards older messages and renders them again
+when you scroll. Before reading, the extension walks the conversation's scroll area so the site
+renders the rest, then puts your reading position back exactly where it was, including when the walk
+stops early or you cancel it. Nothing is clicked, typed, or sent; the only thing that changes on the
+page is where it is scrolled to.
+
+Every exported file states whether it is the whole conversation. If the walk could not finish, the
+file says so and says why, rather than presenting a partial capture as the conversation. You can
+switch the walk off in the popup, or globally and per site in the options page, and the file will say
+that only the rendered portion was exported.
+
 ## Formats
 
 | Format | Good for | Note |
@@ -45,6 +58,8 @@ characters. See [`docs/architecture.md`](docs/architecture.md).
 - It will not silently drop a message from the middle of a conversation. If some turns cannot be
   read, it exports the readable ones and tells you how many it skipped.
 - It will not claim a download finished when it was interrupted.
+- It will not click a page control to load more of a conversation, and it will not claim a capture
+  is complete when the walk did not reach the end.
 - It will not invent a caption, a filename, or a link for an image or attachment. Those become a
   labelled note such as `[image]`.
 - It will not mark a site as working when its selectors have not been checked against a live

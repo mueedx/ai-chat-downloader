@@ -217,8 +217,37 @@ test('a partial capture is disclosed in the exported file (FR-014)', () => {
     turns: [{ role: 'user', text: 'hello' }]
   });
   const text = decoder.decode(render(chat, 'txt').bytes);
-  assert.match(text, /only the turns the page had rendered were captured/);
+  assert.match(text, /Capture: only the messages the page had rendered were read/);
   assert.match(text, /2 message\(s\) could not be read/);
+});
+
+test('a walked but incomplete capture is disclosed with its reason (FR-005)', () => {
+  const chat = NS.chat.createChat({
+    site: 'claude',
+    siteLabel: 'Claude',
+    title: 'Very long',
+    turns: [{ role: 'user', text: 'one' }, { role: 'assistant', text: 'two' }],
+    completeness: { state: 'incomplete', walked: true, captured: 2, reason: 'the walk ran out of time' }
+  });
+
+  const text = decoder.decode(render(chat, 'md').bytes);
+  assert.match(text, /Capture: incomplete\. The conversation is longer than the walk could read\./);
+  assert.match(text, /Reason: the walk ran out of time\./);
+  assert.match(text, /> Note: scroll to the top of the conversation and export again/);
+});
+
+test('a complete capture says so and carries no warning note (FR-004)', () => {
+  const chat = NS.chat.createChat({
+    site: 'gemini',
+    siteLabel: 'Gemini',
+    title: 'Whole thing',
+    turns: [{ role: 'user', text: 'one' }],
+    completeness: { state: 'complete', walked: true, captured: 1, steps: 2, durationMs: 300 }
+  });
+
+  const text = decoder.decode(render(chat, 'md').bytes);
+  assert.match(text, /> Capture: the whole conversation was read\./);
+  assert.equal(/scroll to the top/.test(text), false);
 });
 
 test('the exported filename carries the title, the site, and the extension', () => {

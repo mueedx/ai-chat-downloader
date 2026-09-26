@@ -8,7 +8,9 @@
 
   const DEFAULTS = {
     format: 'md',
-    disabledSites: []
+    disabledSites: [],
+    walkEnabled: true,
+    walkDisabledSites: []
   };
 
   const VALID_FORMATS = ['md', 'txt', 'docx', 'pdf'];
@@ -38,8 +40,31 @@
     const stored = await readRaw();
     return {
       format: validateFormat(stored.format),
-      disabledSites: validateSites(stored.disabledSites)
+      disabledSites: validateSites(stored.disabledSites),
+      walkEnabled: stored.walkEnabled !== false,
+      walkDisabledSites: validateSites(stored.walkDisabledSites)
     };
+  }
+
+  async function setWalkEnabled(enabled) {
+    await writeRaw({ walkEnabled: Boolean(enabled) });
+    return Boolean(enabled);
+  }
+
+  async function setWalkDisabled(siteId, disabled) {
+    const stored = await readRaw();
+    const sites = new Set(validateSites(stored.walkDisabledSites));
+    if (disabled) sites.add(siteId);
+    else sites.delete(siteId);
+    await writeRaw({ walkDisabledSites: Array.from(sites) });
+    return Array.from(sites);
+  }
+
+  /** Whether a walk should be attempted on this site, per the two switches. */
+  async function shouldWalk(siteId) {
+    const settings = await getSettings();
+    if (!settings.walkEnabled) return false;
+    return settings.walkDisabledSites.indexOf(siteId) === -1;
   }
 
   async function setFormat(format) {
@@ -67,6 +92,9 @@
     VALID_FORMATS: VALID_FORMATS,
     getSettings: getSettings,
     setFormat: setFormat,
+    setWalkEnabled: setWalkEnabled,
+    setWalkDisabled: setWalkDisabled,
+    shouldWalk: shouldWalk,
     setSiteDisabled: setSiteDisabled,
     isSiteDisabled: isSiteDisabled
   };

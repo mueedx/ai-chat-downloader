@@ -281,6 +281,8 @@
       (typeof doc.title === 'string' ? doc.title : '') ||
       '';
 
+    const scrolled = detectPartial(doc, adapter);
+
     return chat.createChat({
       site: adapter.id,
       siteLabel: adapter.label,
@@ -288,7 +290,17 @@
       url: opts.url || (typeof location !== 'undefined' ? location.href : ''),
       turns: turns,
       unreadableTurns: unreadableTurns,
-      partial: opts.partial === undefined ? detectPartial(doc, adapter) : Boolean(opts.partial)
+      // Without a walk, completeness is never claimed. The reason distinguishes a transcript the
+      // user had scrolled through from one that simply was never walked, because they read
+      // differently: the first is the case the walk exists to fix.
+      completeness: opts.completeness || {
+        state: 'incomplete',
+        walked: false,
+        captured: turns.length,
+        reason: scrolled
+          ? 'the page was scrolled away from the top, so older messages may not have been rendered'
+          : 'the conversation was not walked, so older messages may not have been rendered'
+      }
     });
   }
 

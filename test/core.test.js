@@ -144,19 +144,35 @@ test('extractChat counts containers whose role cannot be resolved', () => {
   assert.equal(result.ok, false, 'a chat with no readable role is not a successful export');
 });
 
-test('a scrolling transcript that is not at the top is reported as partial', () => {
+test('a transcript read without a walk never claims completeness, and says why', () => {
   const doc = loadFixture('chatgpt.html');
   const main = doc.querySelector('main');
   main.scrollHeight = 5000;
   main.clientHeight = 800;
   main.scrollTop = 1200;
 
-  const result = NS.dom.extractChat(NS.adapters.chatgpt, doc, {});
-  assert.equal(result.ok, true);
-  assert.equal(result.chat.partial, true);
+  const scrolled = NS.dom.extractChat(NS.adapters.chatgpt, doc, {});
+  assert.equal(scrolled.ok, true);
+  assert.equal(scrolled.chat.partial, true);
+  assert.equal(scrolled.chat.completeness.state, 'incomplete');
+  assert.equal(scrolled.chat.completeness.walked, false);
+  assert.match(scrolled.chat.completeness.reason, /scrolled away from the top/);
 
   main.scrollTop = 0;
-  assert.equal(NS.dom.extractChat(NS.adapters.chatgpt, doc, {}).chat.partial, false);
+  const atTop = NS.dom.extractChat(NS.adapters.chatgpt, doc, {});
+  assert.equal(atTop.chat.completeness.state, 'incomplete', 'being at the top is not completeness');
+  assert.match(atTop.chat.completeness.reason, /was not walked/);
+});
+
+test('a walk result overrides the read-only completeness claim', () => {
+  const doc = loadFixture('chatgpt.html');
+  const result = NS.dom.extractChat(NS.adapters.chatgpt, doc, {
+    completeness: { state: 'complete', walked: true, captured: 3, steps: 4, durationMs: 800 }
+  });
+
+  assert.equal(result.chat.completeness.state, 'complete');
+  assert.equal(result.chat.partial, false);
+  assert.match(NS.chat.completenessLine(result.chat.completeness), /whole conversation was read/);
 });
 
 test('a streaming reply is marked incomplete instead of looking finished', () => {

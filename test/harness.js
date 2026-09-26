@@ -33,6 +33,8 @@ export function loadExtension(options) {
     'core/chat.js',
     'core/filename.js',
     'core/dom.js',
+    'core/merge.js',
+    'core/walker.js',
     'core/sites.js',
     'adapters/chatgpt.js',
     'adapters/claude.js',

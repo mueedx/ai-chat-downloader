@@ -67,6 +67,48 @@ the same files into a Node context through `new Function('window', code)`, so th
 the files the browser runs rather than a parallel build. `test/minidom.js` provides just enough
 DOM for that.
 
+## The walk, and why a capture has to be merged
+
+A long conversation is not all in the page. Sites discard older messages to save memory and render
+them again when the user scrolls, so a single read gets whatever happens to be on screen. Feature
+001 disclosed that; this one fixes it.
+
+`src/core/walker.js` does the fix and knows nothing about selectors. It has two phases, because
+there are two different problems. Loading older turns is a top-of-page problem: sites fetch them
+when the user scrolls up and the container grows, so the walk sits at the top until the height
+stops changing. Reading everything is a sweep problem, so the walk then steps down through the
+container a viewport at a time. Positions are assigned directly and never animated, which honours a
+reduced-motion preference by not implementing the alternative, and the walk never clicks, types, or
+submits, because a capture has no business changing state the user did not ask to change.
+
+A virtualised list recycles its elements, so by the time the walk reaches the top the bottom of the
+conversation is gone from the DOM. Reading once at the end would therefore lose messages. The walk
+reads at every step and `src/core/merge.js` joins the reads on the longest overlap between the tail
+of what it has and the head of the newest read. That is a heuristic and it is tested on the shapes
+that occur; when two reads do not overlap, the longer one is kept, because an unaligned merge would
+duplicate or drop turns. When the final read is longer than every earlier read, or the same length
+and contains them, the final read is used directly, because a page that renders everything has
+nothing to merge.
+
+Two bounds keep this from becoming a hang: a time limit and a step limit. Exhausting either stops
+the walk, restores the position, and still produces an export. Running out of steps is deliberately
+not reported as reaching the bottom, because that would put a "complete" claim in the file for a
+capture that is missing whatever was never scrolled to.
+
+## The completeness claim
+
+Every exported file states whether it is the whole conversation. There is no third state, and
+nothing infers completeness from a turn count. `state: complete` is produced only by a walk that
+reached the bottom, or by a page with nothing to scroll. Everything else is `incomplete` with a
+reason in the user's terms: the walk was switched off, the page was in a background tab, the walk
+ran out of time, or the site does not expose a scrollable transcript. The claim is computed in
+`src/core/chat.js`, carried on the chat, and printed in the metadata block, so all four formats say
+the same thing.
+
+The walk is on by default, disclosed in the popup before the export, and switchable off globally
+and per site in the options page. A preview read never walks the page: a walk on open would move
+the page before the user had asked for anything.
+
 ## Reading the page, not the site
 
 The extension never fetches a chat site. It reads the DOM of the page the user already has open,

@@ -8,6 +8,36 @@ versioning.
 
 Nothing yet.
 
+## [0.2.0] - 2026-09-26
+
+Full transcript capture, specified as `002-full-transcript-capture`.
+
+### Added
+
+- Before reading a long conversation, the page is walked from the top down so the site renders the
+  transcript it had discarded, and the reading position is restored afterwards on every path,
+  including cancellation and a walk that runs out of time.
+- Successive reads are merged, so a conversation whose list recycles its elements is no longer
+  captured from whichever window happened to be on screen last.
+- Every exported file now states whether it is the whole conversation, with a reason when it is
+  not: the walk was switched off, the page was in a background tab, the walk ran out of time, or
+  the site does not expose a scrollable transcript. Nothing infers completeness from a turn count.
+- A disclosure in the popup, on by default, and a global and per-site switch in the options page.
+- Preservation of keyboard focus and of text typed but not yet sent, across the walk.
+
+### Changed
+
+- The content script's extraction is asynchronous, since it can now walk a page.
+- A read without a walk never claims completeness, and says which of the two incomplete cases it
+  is, rather than a single shared note.
+
+### Known limitations
+
+- A site that needs a "load more" control, rather than scrolling, is not walked. The extension does
+  not click page controls, so such a site keeps the previous behaviour and is reported as an
+  incomplete capture.
+- The walk has not been run against a live long conversation on any of the six sites.
+
 ## [0.1.0] - 2026-09-26
 
 First release candidate, built to the `001-chat-export-core` specification.
@@ -37,5 +67,6 @@ First release candidate, built to the `001-chat-export-core` specification.
   unverified in the options page until someone records a check date in `docs/supported-sites.md`.
 - Only the part of a conversation the page has rendered can be captured.
 
-[Unreleased]: https://github.com/mueedx/ai-chat-downloader/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/mueedx/ai-chat-downloader/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/mueedx/ai-chat-downloader/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/mueedx/ai-chat-downloader/releases/tag/v0.1.0

@@ -17,6 +17,8 @@
     preview: el('preview'),
     formats: el('formats'),
     formatNote: el('format-note'),
+    walk: el('walk'),
+    walkNote: el('walk-note'),
     selectionMode: el('selection-mode'),
     selectionFields: el('selection-fields'),
     rangeFrom: el('range-from'),
@@ -29,6 +31,7 @@
   };
 
   let chosenFormat = 'md';
+  let shouldWalkHere = true;
 
   function setStatus(text, kind) {
     ui.status.textContent = text || '';
@@ -63,6 +66,22 @@
       });
       ui.formats.appendChild(button);
     }
+  }
+
+  /** FR-012: the page movement is disclosed before the export, not after. */
+  function describeWalk() {
+    if (!ui.walk.checked) {
+      ui.walkNote.textContent =
+        'Off: only the messages the page has already rendered will be exported, and the file will say so.';
+      return false;
+    }
+    if (!shouldWalkHere) {
+      ui.walkNote.textContent = 'Off for this site in the options page, so the page will not scroll.';
+      return false;
+    }
+    ui.walkNote.textContent =
+      'The page will scroll to load the rest of the conversation, then return to where you are now.';
+    return true;
   }
 
   function describeFormat(formats) {
@@ -118,7 +137,12 @@
     ui.unsupported.classList.add('hidden');
     ui.site.textContent = info.siteLabel + (info.verified ? '' : ' (selectors unverified)');
 
-    const result = await askTab(tab.id, 'extract');
+    // The preview never walks the page. A walk on open would move the user's page before they
+    // had asked for anything, so only the export walks.
+    shouldWalkHere = await NS.storage.shouldWalk(info.site);
+    describeWalk(info.site);
+
+    const result = await askTab(tab.id, 'extract', {});
     if (!result || !result.ok) {
       ui.title.textContent = '-';
       ui.count.textContent = '0';
@@ -141,6 +165,9 @@
     ui.exportButton.disabled = false;
 
     const warnings = [];
+    if (result.completeness && result.completeness.state === 'incomplete' && result.completeness.walked) {
+      warnings.push('Capture is incomplete: ' + (result.completeness.reason || 'the walk stopped early') + '.');
+    }
     if (result.unreadableTurns > 0) {
       warnings.push(result.unreadableTurns + ' message(s) could not be read on this page.');
     }
@@ -180,7 +207,8 @@
     ui.exportButton.disabled = true;
     setStatus('Reading the page…');
 
-    const result = await askTab(tab.id, 'extract');
+    const wanted = ui.walk.checked && shouldWalkHere;
+    const result = await askTab(tab.id, 'extract', { walk: wanted });
     if (!result || !result.ok) {
       setStatus((result && result.reason) || 'Nothing could be read from this page.', 'error');
       ui.exportButton.disabled = false;
@@ -188,6 +216,11 @@
     }
 
     let chat = result.chat;
+    if (chat.completeness && chat.completeness.state !== 'complete') {
+      showWarnings([
+        'Capture is incomplete: ' + (chat.completeness.reason || 'the page had not rendered the rest') + '.'
+      ]);
+    }
     if (ui.selectionMode.checked) {
       chat = NS.chat.applySelection(chat, Number(ui.rangeFrom.value), Number(ui.rangeTo.value));
       if (chat.turns.length === result.turnCount) {
@@ -228,9 +261,14 @@
     buildFormatButtons(formats);
     describeFormat(formats);
 
+    ui.walk.checked = settings.walkEnabled;
+    describeWalk();
+
     ui.selectionMode.addEventListener('change', () => {
       ui.selectionFields.classList.toggle('hidden', !ui.selectionMode.checked);
     });
+
+    ui.walk.addEventListener('change', () => describeWalk());
 
     ui.exportButton.addEventListener('click', exportChat);
     ui.refresh.addEventListener('click', refresh);

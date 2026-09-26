@@ -52,8 +52,10 @@
           ' of ' + chat.selection.total
       );
     }
-    if (chat.partial) {
-      lines.push('Note: only the turns the page had rendered were captured. Scroll to the top and export again for the full conversation.');
+    const claim = NS.chat.completenessLine(chat.completeness);
+    if (claim) lines.push(claim);
+    if (chat.completeness && chat.completeness.state !== 'complete' && chat.completeness.walked) {
+      lines.push('Note: scroll to the top of the conversation and export again, or export a smaller range.');
     }
     if (chat.incompleteTurns > 0) {
       lines.push('Note: ' + chat.incompleteTurns + ' message(s) were still being written when the export ran.');

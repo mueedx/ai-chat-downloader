@@ -29,3 +29,11 @@
 - Added the live verification checklist, so a site check is a fixed procedure with a recorded result.
 - Added an options page suite covering the per-site switches, the default format, and the status
   board, including that a verified adapter really does change what the board says.
+- Opened feature 002 and specified full transcript capture: two-phase walk, overlap merge,
+  completeness claim, opt-out switches, and focus preservation.
+- Added the walk and the merge, both proven against a fake scroll container before anything called
+  them.
+- Fixed two defects the new tests found: a walk that exhausted its steps reported completion, and
+  the final read could win over an earlier longer read.
+- Every exported file now states whether it is the whole conversation, with a reason when not.
+- Added the popup disclosure and the global and per-site capture switches.

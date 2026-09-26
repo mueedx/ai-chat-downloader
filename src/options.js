@@ -53,6 +53,42 @@
     }
   }
 
+  /** The global walk switch, and the per-site opt-outs beneath it. FR-010. */
+  function renderWalk(settings) {
+    const global = el('walk-global');
+    global.setAttribute('aria-pressed', String(settings.walkEnabled));
+    global.textContent = settings.walkEnabled
+      ? 'Scroll long conversations: on'
+      : 'Scroll long conversations: off';
+    global.onclick = async () => {
+      const next = await NS.storage.setWalkEnabled(!settings.walkEnabled);
+      renderWalk(Object.assign({}, settings, { walkEnabled: next }));
+    };
+
+    const host = el('walk-sites');
+    host.innerHTML = '';
+    for (const site of NS.sites.siteList()) {
+      const enabled = settings.walkEnabled && settings.walkDisabledSites.indexOf(site.id) === -1;
+
+      const label = document.createElement('label');
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.checked = enabled;
+      input.disabled = !settings.walkEnabled;
+      input.addEventListener('change', async () => {
+        const updated = await NS.storage.setWalkDisabled(site.id, !input.checked);
+        renderWalk(Object.assign({}, settings, { walkDisabledSites: updated }));
+      });
+
+      const text = document.createElement('span');
+      text.textContent = site.label;
+
+      label.appendChild(input);
+      label.appendChild(text);
+      host.appendChild(label);
+    }
+  }
+
   function renderStatus() {
     const host = el('status');
     host.innerHTML = '';
@@ -77,6 +113,7 @@
   async function init() {
     const settings = await NS.storage.getSettings();
     renderFormats(settings.format);
+    renderWalk(settings);
     renderSites(settings.disabledSites);
     renderStatus();
   }

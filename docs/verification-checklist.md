@@ -36,12 +36,16 @@ version and not another is still a break.
 6. Send a message and export while the reply is still streaming. Confirm the export either excludes
    the partial turn or marks it as incomplete, and never presents it as finished.
 7. Start a long conversation, scroll to the middle, and export. Confirm the popup warns that only
-   the rendered part was captured.
-8. Rename the conversation to something with punctuation, emoji, and a non-Latin script. Confirm the
+   the rendered part was captured when the walk is off, and that the capture is reported as
+   complete when it is on.
+8. With a long conversation open and scrolled to the middle, note the message on screen and export.
+   Confirm the file starts with the first message of the conversation, and that the same message is
+   on screen afterwards. This is the walk, and it is the step most likely to fail on a real site.
+9. Rename the conversation to something with punctuation, emoji, and a non-Latin script. Confirm the
    file saves with a valid name on your operating system.
-9. Export the same conversation to all four formats and open each one. DOCX must open in your word
+10. Export the same conversation to all four formats and open each one. DOCX must open in your word
    processor with no repair prompt, and PDF must open in a viewer.
-10. Export a CJK conversation to PDF and confirm the popup warns about the characters it cannot
+11. Export a CJK conversation to PDF and confirm the popup warns about the characters it cannot
     draw, and that Markdown, text, and Word keep the text.
 
 ## What to record

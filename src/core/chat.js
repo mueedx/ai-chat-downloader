@@ -108,6 +108,36 @@
     };
   }
 
+  /**
+   * The claim the exported file is allowed to make about its own completeness. There is no third
+   * state and nothing infers completeness from a turn count: either the capture reached the end of
+   * the conversation, or the file says what part of it the file holds.
+   */
+  function completeness(input) {
+    const source = input || {};
+    return {
+      state: source.state === 'complete' ? 'complete' : 'incomplete',
+      walked: Boolean(source.walked),
+      reason: typeof source.reason === 'string' && source.reason ? source.reason : null,
+      captured: Number.isFinite(source.captured) ? source.captured : 0,
+      steps: Number.isFinite(source.steps) ? source.steps : 0,
+      durationMs: Number.isFinite(source.durationMs) ? source.durationMs : 0
+    };
+  }
+
+  const COMPLETENESS_TEXT = {
+    complete: 'Capture: the whole conversation was read.',
+    incompleteNoWalk: 'Capture: only the messages the page had rendered were read.',
+    incompleteWalked: 'Capture: incomplete. The conversation is longer than the walk could read.'
+  };
+
+  /** One line for the file, in the user's terms, or null when there is nothing to disclose. */
+  function completenessLine(claim) {
+    if (!claim || claim.state === 'complete') return COMPLETENESS_TEXT.complete;
+    const text = claim.walked ? COMPLETENESS_TEXT.incompleteWalked : COMPLETENESS_TEXT.incompleteNoWalk;
+    return claim.reason ? text + ' Reason: ' + claim.reason + '.' : text;
+  }
+
   function createChat(input) {
     const source = input || {};
     const turns = [];
@@ -116,6 +146,10 @@
       const turn = normaliseTurn(raw);
       if (turn) turns.push(turn);
     }
+
+    const claim = source.completeness
+      ? completeness(source.completeness)
+      : completeness({ state: 'incomplete', reason: 'the page had not rendered the rest', captured: turns.length });
 
     return {
       site: String(source.site || 'unknown'),
@@ -126,7 +160,8 @@
       turns: turns,
       unreadableTurns: Number.isFinite(source.unreadableTurns) ? source.unreadableTurns : 0,
       incompleteTurns: turns.filter((t) => t.incomplete).length,
-      partial: Boolean(source.partial),
+      partial: claim.state !== 'complete',
+      completeness: claim,
       selection: null
     };
   }
@@ -168,6 +203,9 @@
     textFromBlocks: textFromBlocks,
     normaliseRole: normaliseRole,
     normaliseTurn: normaliseTurn,
+    completeness: completeness,
+    completenessLine: completenessLine,
+    COMPLETENESS_TEXT: COMPLETENESS_TEXT,
     createChat: createChat,
     chatTurnCount: chatTurnCount,
     chatIncompleteCount: chatIncompleteCount,
