@@ -26,3 +26,6 @@
 - Kept list markers when a message is rendered as plain text.
 - Added a popup suite driving the export path, the format switch, the turn range, and the failure
   paths that must not reach the download call.
+- Added the live verification checklist, so a site check is a fixed procedure with a recorded result.
+- Added an options page suite covering the per-site switches, the default format, and the status
+  board, including that a verified adapter really does change what the board says.

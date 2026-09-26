@@ -100,6 +100,12 @@ then becomes code. The project constitution is
 
 The current feature is `specs/001-chat-export-core`.
 
+## Verifying a site
+
+No adapter has been checked against a live signed-in conversation yet, so every site shows as
+unverified in the options page. The procedure for changing that, and the privacy rules it asks you
+to follow, is in [`docs/verification-checklist.md`](docs/verification-checklist.md).
+
 ## Contributing
 
 Read [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`RULES.md`](RULES.md) first. Bug reports are most

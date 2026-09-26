@@ -22,7 +22,6 @@ function makeElement(id) {
     id: id,
     tagName: 'DIV',
     textContent: '',
-    innerHTML: '',
     className: '',
     value: '',
     checked: false,
@@ -63,6 +62,16 @@ function makeElement(id) {
       return selector === 'button' ? element.children : [];
     }
   };
+
+    // In a real element, assigning innerHTML drops the existing children. The stub has to do
+    // the same or a re-render looks like an append.
+    let _innerHTML = '';
+    Object.defineProperty(element, 'innerHTML', {
+      enumerable: true,
+      get() { return _innerHTML; },
+      set(value) { _innerHTML = value; if (value === '') element.children.length = 0; }
+    });
+
   return element;
 }
 
