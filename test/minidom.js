@@ -179,6 +179,9 @@ export function loadFixture(name) {
 
 /** Parses one compound selector such as `div.a.b[attr="v"]`. Returns null if unsupported. */
 function parseCompound(text) {
+  // `*` is the universal selector. The diagnostic samples every element on a page, so the
+  // tests have to be able to ask for all of them.
+  if (text === '*') return { tag: null, universal: true, classes: [], id: null, attributes: [] };
   const compound = { tag: null, classes: [], id: null, attributes: [] };
   const pattern = /([.#]?[-\w]+|\[[^\]]+\])/g;
   let consumed = '';
@@ -268,7 +271,11 @@ function descendants(node, out) {
 
 function matchesAll(root, selector) {
   const groups = parseSelector(selector);
-  if (!groups.length || groups.includes(null)) return [];
+  // A browser throws on a selector it cannot parse, and dom.js reports that as `unsupported`
+  // rather than as a count of zero. Returning an empty list here would make the two look alike.
+  if (!groups.length || groups.includes(null)) {
+    throw new SyntaxError('not a valid selector: ' + selector);
+  }
 
   return descendants(root, []).filter((element) =>
     groups.some((chain) => matchesChain(element, chain))

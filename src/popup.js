@@ -148,12 +148,11 @@
       ui.count.textContent = '0';
       ui.preview.textContent = '';
       ui.exportButton.disabled = true;
-      const tried = (result && result.tried) || [];
       const reason = (result && result.reason) || 'Nothing could be read from this page.';
-      setStatus(
-        tried.length ? reason + ' Tried: ' + tried.join(' | ') : reason,
-        'error'
-      );
+      // The content script reads the page, so it words the diagnosis. This page has no
+      // conversation document of its own and does not load the DOM engine.
+      const detail = (result && result.detail) || ((result && result.tried) || []).join(' | ');
+      setStatus(detail ? reason + ' Tried: ' + detail : reason, 'error');
       return;
     }
 

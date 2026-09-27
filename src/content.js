@@ -125,7 +125,15 @@
     if (turns && turns.length) result.chat.turns = turns;
 
     if (!result.ok) {
-      return { ok: false, reason: result.reason, tried: result.tried, siteLabel: adapter.label };
+      return {
+        ok: false,
+        reason: result.reason,
+        tried: result.tried,
+        siteLabel: adapter.label,
+        // The page is read here, so the failure is worded here. The popup has no document of its
+        // own to diagnose, and it should not have to load the DOM engine to print a sentence.
+        detail: NS.dom.describeDiagnostic(result.diagnostic) || (result.tried || []).join(' | ')
+      };
     }
 
     return {
@@ -135,6 +143,7 @@
       unreadableTurns: result.chat.unreadableTurns,
       incompleteTurns: result.chat.incompleteTurns,
       partial: result.chat.partial,
+      inFrame: Boolean(result.chat.inFrame),
       completeness: result.chat.completeness,
       walk: walk
         ? {

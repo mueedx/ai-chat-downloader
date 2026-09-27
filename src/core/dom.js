@@ -311,37 +311,163 @@
    */
   function extractChat(adapter, doc, options) {
     if (!adapter) {
-      return { ok: false, chat: null, reason: 'No adapter for this site.', tried: [] };
+      return { ok: false, chat: null, reason: 'No adapter for this site.', tried: [], diagnostic: null };
     }
     if (!doc) {
-      return { ok: false, chat: null, reason: 'No page to read.', tried: [] };
+      return { ok: false, chat: null, reason: 'No page to read.', tried: [], diagnostic: null };
     }
 
     const selectors = adapter.turnSelectors || [];
     const tried = [];
 
-    for (let i = 0; i < selectors.length; i += 1) {
-      tried.push(selectors[i]);
-      let nodes = [];
-      try {
-        nodes = doc.querySelectorAll(selectors[i]) || [];
-      } catch (error) {
-        nodes = [];
-      }
-      if (!nodes.length) continue;
+    // The transcript may live in a same-origin frame the content script never entered itself,
+    // so each readable document gets a turn before anything is reported as missing.
+    const documents = readableDocuments(doc);
 
-      const result = buildChat(adapter, doc, nodes, options);
-      if (chat.chatTurnCount(result) > 0) {
-        return { ok: true, chat: result, reason: null, tried: tried };
+    for (const current of documents) {
+      for (let i = 0; i < selectors.length; i += 1) {
+        let nodes = [];
+        try {
+          nodes = current.querySelectorAll(selectors[i]) || [];
+        } catch (error) {
+          nodes = [];
+        }
+        if (!nodes.length) continue;
+
+        if (tried.indexOf(selectors[i]) === -1) tried.push(selectors[i]);
+
+        const result = buildChat(adapter, current, nodes, options);
+        if (chat.chatTurnCount(result) > 0) {
+          result.inFrame = current !== doc;
+          return { ok: true, chat: result, reason: null, tried: tried, diagnostic: null };
+        }
       }
+    }
+
+    for (let i = 0; i < selectors.length; i += 1) {
+      if (tried.indexOf(selectors[i]) === -1) tried.push(selectors[i]);
     }
 
     return {
       ok: false,
       chat: null,
       reason: 'No conversation messages were found on this page.',
-      tried: tried
+      tried: tried,
+      diagnostic: diagnose(adapter, doc)
     };
+  }
+
+  /**
+   * Frames the content script can reach from here: this document plus any same-origin frame.
+   * A transcript living in a frame the script never entered is the one failure a selector repair
+   * cannot fix, so the frame is read rather than reported missing.
+   */
+  function readableDocuments(doc) {
+    const docs = [doc];
+    if (!doc || typeof doc.querySelectorAll !== 'function') return docs;
+
+    let frames = [];
+    try {
+      frames = doc.querySelectorAll('iframe');
+    } catch (error) {
+      return docs;
+    }
+
+    for (let i = 0; i < frames.length; i += 1) {
+      try {
+        const inner = frames[i].contentDocument;
+        if (inner && docs.indexOf(inner) === -1) docs.push(inner);
+      } catch (error) {
+        // Cross-origin: not readable, and not an error worth reporting to the user.
+      }
+    }
+
+    return docs;
+  }
+
+  function countMatches(doc, selector) {
+    try {
+      return (doc.querySelectorAll(selector) || []).length;
+    } catch (error) {
+      return -1;
+    }
+  }
+
+  /**
+   * What the page actually contained when extraction failed. Structure only: tag names and class
+   * attributes, never message text, because a diagnosis has no business carrying a conversation
+   * (FR-004).
+   */
+  function diagnose(adapter, doc) {
+    const selectors = ((adapter && adapter.turnSelectors) || []).map((selector) => ({
+      selector: selector,
+      count: countMatches(doc, selector)
+    }));
+
+    let frames = 0;
+    let containers = [];
+    let examined = 0;
+
+    if (doc && typeof doc.querySelectorAll === 'function') {
+      try {
+        frames = doc.querySelectorAll('iframe').length;
+      } catch (error) {
+        frames = -1;
+      }
+
+      const candidates = [];
+      let all = [];
+      try {
+        all = doc.querySelectorAll('*');
+      } catch (error) {
+        all = [];
+      }
+
+      // Sample rather than walk the whole document: this runs only after a failure, and a page
+      // with a few thousand nodes must not feel like a hang (FR-005).
+      const limit = Math.min(all.length, 4000);
+      for (let i = 0; i < limit; i += 1) {
+        const element = all[i];
+        examined += 1;
+        const text = element.textContent || '';
+        if (text.length < 80) continue;
+        if (element.children && element.children.length === 0) continue;
+        candidates.push({ tag: tagOf(element), cls: element.className || '', length: text.length });
+      }
+
+      containers = candidates
+        .sort((a, b) => b.length - a.length)
+        .slice(0, 6)
+        .map((entry) => ({ tag: entry.tag, cls: String(entry.cls).slice(0, 80) }));
+    }
+
+    return {
+      selectors: selectors,
+      frames: frames,
+      containers: containers,
+      examined: examined,
+      documentsRead: readableDocuments(doc).length
+    };
+  }
+
+  /** One line for the panel: counts first, then the structural sample (FR-001 to FR-003). */
+  function describeDiagnostic(diag) {
+    if (!diag) return '';
+
+    const parts = diag.selectors.map(
+      (entry) =>
+        (entry.count < 0 ? 'unsupported' : String(entry.count)) + ' matched ' + entry.selector
+    );
+
+    if (diag.frames > 0) {
+      parts.push(diag.frames + ' frame(s) present, ' + diag.documentsRead + ' readable here');
+    }
+
+    for (const container of diag.containers) {
+      parts.push('found <' + container.tag + (container.cls ? ' class="' + container.cls + '"' : '') + '>');
+    }
+
+    return parts.join(' | ');
   }
 
   NS.dom = {
@@ -353,6 +479,9 @@
     resolveRole: resolveRole,
     collectNotes: collectNotes,
     detectPartial: detectPartial,
+    readableDocuments: readableDocuments,
+    diagnose: diagnose,
+    describeDiagnostic: describeDiagnostic,
     extractChat: extractChat
   };
 })(window.AIChatDownloader);
