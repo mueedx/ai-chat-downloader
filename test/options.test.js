@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { loadExtension, loadSource } from './harness.js';
+import { loadExtension, loadPage } from './harness.js';
 
 function makeElement(id) {
   const listeners = new Map();
@@ -80,10 +80,9 @@ function harness(initial, beforeLoad) {
   };
   globalThis.location = { host: 'chatgpt.com', href: 'https://chatgpt.com/c/1' };
 
-  const NS = loadExtension({ force: true });
+  // Only what options.html lists, so a module the real page does not load cannot pass here.
+  const NS = loadPage('options.html', { force: true });
   if (beforeLoad) beforeLoad(NS);
-  loadSource('storage.js', { force: true });
-  loadSource('options.js', { force: true });
 
   return { elements: elements, stored: stored };
 }

@@ -7,7 +7,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { loadExtension, loadSource } from './harness.js';
+import { loadExtension, loadPage } from './harness.js';
 import { loadFixture } from './minidom.js';
 
 const IDS = [
@@ -122,10 +122,10 @@ function harness(initial, site = SUPPORTED, extract = goodExtract) {
     constructor(parts) { this.parts = parts; }
   };
 
-  // Re-evaluated per case: the popup resolves its elements once, at load time.
-  loadExtension({ force: true });
-  loadSource('storage.js', { force: true });
-  loadSource('popup.js', { force: true });
+  // Only what popup.html lists, and re-evaluated per case because the popup resolves its
+  // elements once, at load time. A global the real popup scope lacks is exactly how a missing
+  // script tag stays hidden until someone opens the popup.
+  loadPage('popup.html', { force: true });
 
   return { elements: elements, downloads: downloads, stored: stored, extracts: extracts };
 }
@@ -139,6 +139,8 @@ const SUPPORTED = {
 };
 
 function goodExtract() {
+  // The content script is the side that reads a document, so it runs with the manifest's files.
+  loadExtension();
   const NS = window.AIChatDownloader;
   const result = NS.dom.extractChat(NS.adapters.chatgpt, loadFixture('chatgpt.html'), {
     url: 'https://example.test/c/1'
@@ -267,6 +269,22 @@ test('a failed extraction never reaches the download call and names the selector
   assert.match(ui.elements.get('status').textContent, /No conversation messages/);
   assert.match(ui.elements.get('status').textContent, /Tried: \[data-message-author-role\]/);
   assert.match(ui.elements.get('status').className, /error/);
+  assert.equal(ui.downloads.length, 0);
+});
+
+test('a diagnosis worded by the content script reaches the panel as it was sent', async () => {
+  const ui = harness({}, SUPPORTED, () => ({
+    ok: false,
+    reason: 'No conversation messages were found on this page.',
+    tried: ['main div[class*="message"]'],
+    detail: '0 matched main div[class*="message"] | found <section class="thread">'
+  }));
+  await flush();
+
+  const status = ui.elements.get('status').textContent;
+  assert.match(status, /No conversation messages/);
+  assert.match(status, /0 matched main div\[class\*="message"\]/);
+  assert.match(status, /found <section class="thread">/);
   assert.equal(ui.downloads.length, 0);
 });
 

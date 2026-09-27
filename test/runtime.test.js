@@ -123,6 +123,12 @@ test('a page with no conversation reports the selectors it tried and no chat', a
   assert.equal(result.chat, undefined, 'a failure must not carry a chat object');
   assert.match(result.reason, /No conversation messages/);
   assert.deepEqual(result.tried, window.AIChatDownloader.adapters.chatgpt.turnSelectors);
+  // The content script reads the page, so it words the diagnosis here. The popup shows this
+  // string and has no document of its own to diagnose.
+  assert.equal(
+    result.detail,
+    '0 matched [data-message-author-role] | 0 matched article[data-testid^="conversation-turn"]'
+  );
 });
 
 test('a streaming reply is reported as incomplete through the message API', async () => {

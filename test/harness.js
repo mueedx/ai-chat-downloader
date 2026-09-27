@@ -59,3 +59,16 @@ export function loadExtension(options) {
 export function fixturePath(name) {
   return path.join(here, 'fixtures', name);
 }
+
+/**
+ * The scripts an extension page loads, in document order, straight out of its HTML. A page suite
+ * must use this and not `loadExtension`, because the real page has no module the HTML omits, and
+ * a harness that supplies one anyway hides a missing script tag until a user hits it.
+ */
+export function loadPage(htmlName, options) {
+  const html = readFileSync(path.join(srcDir, htmlName), 'utf8');
+  const scripts = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map((match) => match[1]);
+  if (!scripts.length) throw new Error(htmlName + ' loads no scripts');
+  for (const script of scripts) loadSource(script, options);
+  return globalThis.AIChatDownloader;
+}

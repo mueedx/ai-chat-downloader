@@ -1,5 +1,22 @@
 # Change log
 
+## 2026-09-27
+
+- Fixed the popup crash on a failed extraction: the failure branch called `NS.dom.describeDiagnostic`
+  in a scope where `NS.dom` does not exist, because `src/popup.html` never loads `core/dom.js`. The
+  content script now words the diagnosis and the popup prints that string.
+- Added `loadPage` to the test harness. The popup and options suites now load exactly the scripts
+  their HTML lists, because the shared harness handed both pages modules their real scope has never
+  had, which is how the missing script tag survived a green suite.
+- Restored the 003 diagnostic work from the Cline checkpoint: `NS.dom.diagnose`,
+  `NS.dom.describeDiagnostic`, the same-origin frame fallback in `extractChat`, the spec, and
+  `test/diagnosis.test.js`.
+- Taught `test/minidom.js` the universal selector and a `SyntaxError` on an unparsable selector, so
+  an unsupported selector reads as unsupported rather than as a count of zero.
+- Left the DeepSeek selector repair undone, and DeepSeek `verified: false`. It needs a real capture
+  of a live conversation.
+- Pointed `.specify/feature.json` at `specs/003-deepseek-message-detection`.
+
 ## 2026-09-26
 
 - Initialised the repository and the `001-chat-export-core` feature branch.
